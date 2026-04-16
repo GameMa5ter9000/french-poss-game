@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio: Les Adjectifs Possessifs</title>
+    <style>
+        :root {
+            --primary: #2980b9;
+            --bg: #f4f7f6;
+            --white: #ffffff;
+            --correct: #27ae60;
+            --incorrect: #c0392b;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text);
+        }
+
+        #game-box {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .progress-container {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: #eaf2f8;
+        }
+
+        button.correct { background: var(--correct) !important; color: white; border-color: var(--correct); }
+        button.incorrect { background: var(--incorrect) !important; color: white; border-color: var(--incorrect); }
+
+        .feedback {
+            margin: 20px 0;
+            min-height: 60px;
+            font-weight: 500;
+        }
+
+        .spanish-translation {
+            display: block;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        #next-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-weight: bold;
+            display: none;
+            margin: 0 auto;
+        }
+
+        #next-btn:hover { background: #1f6391; }
+
+        .ranking-badge {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px dashed var(--primary);
+            display: inline-block;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-box">
+    <div id="quiz-view">
+        <h1>Les Adjectifs Possessifs</h1>
+        <div class="progress-container"><div id="progress-bar"></div></div>
+        
+        <div class="question-text" id="q-text"></div>
+        <div class="options-grid" id="options"></div>
+        
+        <div class="feedback" id="feedback-box">
+            <div id="status"></div>
+            <div id="explanation"></div>
+        </div>
+
+        <button id="next-btn" onclick="nextQuestion()">Continuer →</button>
+    </div>
+
+    <div id="result-view" class="hidden">
+        <h2>Résultat Final</h2>
+        <p id="final-score"></p>
+        <p>Tu es un(e) :</p>
+        <div class="ranking-badge" id="rank-name"></div>
+        <br>
+        <button onclick="location.reload()" style="background:#95a5a6; color:white; border:none;">Essayer de nouveau</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "J'ai un chat. C'est ___ chat.", opts: ["mon", "ma", "mes"], ans: "mon", fr: "'Chat' est masculin singulier. Avec 'Je', on utilise 'mon'.", es: "'Chat' es masculino singular. Con 'Je' (yo), usamos 'mon'." },
+        { q: "Tu as une voiture. C'est ___ voiture.", opts: ["ton", "ta", "tes"], ans: "ta", fr: "'Voiture' est féminin singulier. Avec 'Tu', on utilise 'ta'.", es: "'Voiture' es femenino singular. Con 'Tu' (tú), usamos 'ta'." },
+        { q: "Il a des livres. Ce sont ___ livres.", opts: ["son", "sa", "ses"], ans: "ses", fr: "'Livres' est pluriel. On utilise 'ses'.", es: "'Livres' es plural. Usamos 'ses'." },
+        { q: "Nous avons une pomme. C'est ___ pomme.", opts: ["notre", "nos", "votre"], ans: "notre", fr: "Pour 'Nous', le singulier est 'notre'.", es: "Para 'nosotros', el singular es 'notre'." },
+        { q: "Elle a une gomme. C'est ___ gomme.", opts: ["son", "sa", "ses"], ans: "sa", fr: "'Gomme' est féminin. Avec 'Elle', on utilise 'sa'.", es: "'Gomme' es femenino. Con 'Elle' (ella), usamos 'sa'." },
+        { q: "Ustedes tienen flores. Ce sont ___ fleurs.", opts: ["votre", "vos", "leurs"], ans: "vos", fr: "'Fleurs' est pluriel. Avec 'Vous', on utilise 'vos'.", es: "'Fleurs' es plural. Con 'Vous' (ustedes), usamos 'vos'." },
+        { q: "Ils ont une maison. C'est ___ maison.", opts: ["leur", "leurs", "ses"], ans: "leur", fr: "'Maison' est singulier. Avec 'Ils', on utilise 'leur'.", es: "'Maison' es singular. Con 'Ils' (ellos), usamos 'leur'." }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+
+    function loadQuestion() {
+        const q = questions[currentIdx];
+        document.getElementById("q-text").innerText = q.q;
+        const optsDiv = document.getElementById("options");
+        optsDiv.innerHTML = "";
+        document.getElementById("status").innerText = "";
+        document.getElementById("explanation").innerHTML = "";
+        document.getElementById("next-btn").style.display = "none";
+
+        q.opts.forEach(o => {
+            const btn = document.createElement("button");
+            btn.innerText = o;
+            btn.onclick = () => check(o, btn);
+            optsDiv.appendChild(btn);
+        });
+
+        document.getElementById("progress-bar").style.width = (currentIdx / questions.length * 100) + "%";
+    }
+
+    function check(choice, btn) {
+        const q = questions[currentIdx];
+        const allBtns = document.querySelectorAll("#options button");
+        allBtns.forEach(b => b.disabled = true);
+
+        if (choice === q.ans) {
+            btn.classList.add("correct");
+            document.getElementById("status").innerHTML = "<span style='color:var(--correct)'>✅ Correct !</span>";
+            score++;
+        } else {
+            btn.classList.add("incorrect");
+            document.getElementById("status").innerHTML = "<span style='color:var(--incorrect)'>❌ Incorrect</span>";
+            // Mostrar la correcta
+            allBtns.forEach(b => { if(b.innerText === q.ans) b.classList.add("correct"); });
+        }
+
+        document.getElementById("explanation").innerHTML = `
+            <p>${q.fr}</p>
+            <span class="spanish-translation">(${q.es})</span>
+        `;
+        document.getElementById("next-btn").style.display = "block";
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        document.getElementById("quiz-view").classList.add("hidden");
+        document.getElementById("result-view").classList.remove("hidden");
+        
+        const percent = (score / questions.length) * 100;
+        document.getElementById("final-score").innerText = `Has acertado ${score} de ${questions.length}.`;
+        
+        let rank = "";
+        if (percent === 100) rank = "Ordinateur Quantique (IA)";
+        else if (percent >= 80) rank = "Génie de la Sorbonne";
+        else if (percent >= 60) rank = "Étudiant Appliqué";
+        else if (percent >= 40) rank = "Calculatrice Solaire";
+        else rank = "Pierre Décorative";
+        
+        document.getElementById("rank-name").innerText = rank;
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
